@@ -59,3 +59,39 @@ app/app.js       775行
 - 测试应覆盖accessibility、降级、竞态，不仅限功能验收项
 
 ---
+
+## 2026-04-29 — LLM塔罗牌深度解读
+
+### 架构师：Albert (SDD Workflow Skill)
+
+**需求输入：** "继续在现有feature分支上面加上塔罗牌解析功能，解析部分可以接入llm"
+
+**分析决策：**
+- 项目类型：OpenSpec（3组件，现有项目增强）
+- 技术选型：Python Flask 后端 + 前端 JS API 调用
+- 设计风格：保持现有 Minimalist Fluid Glass
+- LLM：Anthropic Claude Sonnet 4，通过后端代理调用（API Key 不暴露到前端）
+
+**SDD 流水线执行：**
+
+| 阶段 | 开发 | 测试 | 结果 |
+|------|------|------|------|
+| 单轮 | 3文件变更 | PASS (15/15) | 一次通过 |
+
+**交付内容：**
+- `app/server.py` — 新增，Flask后端，端口8081，`/api/health` + `/api/tarot-reading`，Anthropic API代理
+- `app/style.css` — 新增样式：`.ai-reading-card`（金边毛玻璃卡）、`.btn-ai-reading`（紫金渐变+辉光脉冲）、`.shimmer-bar`（骨架屏动画）、`.ai-reading-error`（错误态）
+- `app/app.js` — 新增：`requestAIReading()`（15s超时+AbortController）、`createAIInteractionHTML()`（问题输入+按钮+结果卡）、XSS安全转义、全错误态
+- `app/index.html` — 无变更
+
+**代码增量：** +396行
+
+**测试非阻塞建议：**
+- `max_tokens=400` 可能对中文超250字时不够
+- 硬编码 `localhost:8081` 仅适本地开发
+
+### 技能化重构
+
+将 master 的 agents/*.md + DESIGN.md + WORKFLOW.md 整合为单一 `sdd-workflow` skill（344行），存放于 `~/.claude/skills/sdd-workflow/`（用户级全局可用）。此后在任意分支均可通过 `/sdd-workflow` 启动流水线，无需切换分支。
+
+---
