@@ -1,16 +1,17 @@
 """
 Tarot Reading API Server
-POST /api/tarot-reading  — LLM-powered deep tarot interpretation via Anthropic API
+POST /api/tarot-reading  — LLM-powered deep tarot interpretation via DeepSeek API
 GET  /api/health         — Health check
 """
 
 import os
 from flask import Flask, request, jsonify
-from anthropic import Anthropic
+from openai import OpenAI
 
 app = Flask(__name__)
 
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "deepseek-chat"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
 
 # ---------------------------------------------------------------------------
@@ -32,9 +33,9 @@ def health():
 @app.route("/api/tarot-reading", methods=["POST"])
 def tarot_reading():
     # --- 1. Check API key ---
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
-        return jsonify({"error": "API Key 未配置，请设置 ANTHROPIC_API_KEY 环境变量"}), 500
+        return jsonify({"error": "API Key 未配置，请设置 DEEPSEEK_API_KEY 环境变量"}), 500
 
     # --- 2. Parse request ---
     data = request.get_json(silent=True)
@@ -65,23 +66,25 @@ def tarot_reading():
 
     user_prompt = "请根据以下信息给出深度解读：\n\n" + "\n".join(user_parts)
 
-    # --- 4. Call Anthropic API ---
+    # --- 4. Call DeepSeek API ---
     try:
-        client = Anthropic(api_key=api_key)
-        message = client.messages.create(
+        client = OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
+        response = client.chat.completions.create(
             model=MODEL,
-            max_tokens=400,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
+            max_tokens=500,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
         )
-        reading = message.content[0].text
+        reading = response.choices[0].message.content
         return jsonify({"reading": reading})
 
     except Exception as e:
         error_str = str(e)
         # Surface auth errors clearly
         if "auth" in error_str.lower() or "key" in error_str.lower():
-            error_str = "API Key 无效，请检查 ANTHROPIC_API_KEY 环境变量"
+            error_str = "API Key 无效，请检查 DEEPSEEK_API_KEY 环境变量"
         return jsonify({"error": f"解读失败：{error_str}"}), 500
 
 
