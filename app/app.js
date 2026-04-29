@@ -628,6 +628,19 @@ function drawSingleCard() {
     });
   }
 
+  // Add AI reading interaction
+  infoArea.insertAdjacentHTML('beforeend', createAIInteractionHTML('s'));
+  var btnAISingle = document.getElementById('btnAI-s');
+  var resultAISingle = document.getElementById('aiResult-s');
+  var questionAISingle = document.getElementById('aiQuestion-s');
+  (function (cn, ce, iu) {
+    if (btnAISingle && resultAISingle) {
+      btnAISingle.addEventListener('click', function () {
+        requestAIReading(cn, ce, iu, '', btnAISingle, resultAISingle, questionAISingle);
+      });
+    }
+  })(card.name, card.emoji, isUpright);
+
   // Save to localStorage history
   saveReadingToHistory([{
     name: card.name,
@@ -662,7 +675,7 @@ function drawThreeCards() {
   var flipInners = [];
 
   for (var i = 0; i < 3; i++) {
-    (function (card, isUpright, label) {
+    (function (card, isUpright, label, idx) {
       var wrapper = document.createElement('div');
       wrapper.className = 'drawn-card-wrapper';
 
@@ -719,9 +732,21 @@ function drawThreeCards() {
         '<button class="btn-share btn-share-small" data-share-text="' + shareText.replace(/"/g, '&quot;') + '">分享</button>';
 
       wrapper.appendChild(info);
+
+      // Add AI reading interaction for this card
+      info.insertAdjacentHTML('beforeend', createAIInteractionHTML(String(idx)));
+      var btnAI = document.getElementById('btnAI-' + idx);
+      var resultAI = document.getElementById('aiResult-' + idx);
+      var questionAI = document.getElementById('aiQuestion-' + idx);
+      if (btnAI && resultAI) {
+        btnAI.addEventListener('click', function () {
+          requestAIReading(card.name, card.emoji, isUpright, label, btnAI, resultAI, questionAI);
+        });
+      }
+
       row.appendChild(wrapper);
-      flipInners.push({ el: flipInner, delay: 300 + i * 350 });
-    })(cards[i], orientations[i], labels[i]);
+      flipInners.push({ el: flipInner, delay: 300 + idx * 350 });
+    })(cards[i], orientations[i], labels[i], i);
   }
 
   tarotSpread.appendChild(row);
@@ -766,6 +791,101 @@ function resetTarot() {
   tarotDrawn = true;
   renderTarotFan();
   // renderTarotFan sets tarotDrawn = false after DOM rebuild
+}
+
+
+/* ============================================
+   AI TAROT READING
+   ============================================ */
+
+/** Build AI interaction HTML (question input + button + result container) */
+function createAIInteractionHTML(suffix) {
+  var s = suffix || 's';
+  return '<div class="ai-interaction-area">' +
+    '<input type="text" class="ai-question-input" id="aiQuestion-' + s + '" placeholder="想问什么？（可选）" maxlength="100">' +
+    '<button class="btn-ai-reading" id="btnAI-' + s + '"><span class="ai-sparkle">✨</span> AI 深度解读</button>' +
+    '<div class="ai-reading-card" id="aiResult-' + s + '" style="display:none;"></div>' +
+    '</div>';
+}
+
+/** Escape HTML entities */
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/** Request AI-powered deep tarot reading from backend */
+function requestAIReading(cardName, cardEmoji, isUpright, position, buttonEl, resultEl, questionEl) {
+  // Prevent double-click
+  if (buttonEl.disabled) return;
+
+  var question = questionEl ? questionEl.value.trim() : '';
+  var orientation = isUpright ? '正位' : '逆位';
+
+  // Disable button and show loading text
+  buttonEl.disabled = true;
+  buttonEl.innerHTML = '解读中...';
+
+  // Show result container with loading skeleton
+  resultEl.style.display = 'block';
+  resultEl.classList.remove('ai-reading-error');
+  resultEl.innerHTML = '' +
+    '<div class="ai-reading-loading">' +
+      '<div class="shimmer-bar" style="width:100%"></div>' +
+      '<div class="shimmer-bar" style="width:75%"></div>' +
+      '<div class="shimmer-bar" style="width:55%"></div>' +
+    '</div>';
+
+  // Scroll result into view
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // 15-second timeout via AbortController
+  var controller = new AbortController();
+  var timeoutId = setTimeout(function () { controller.abort(); }, 15000);
+
+  fetch('http://localhost:8081/api/tarot-reading', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      card_name: cardName,
+      card_emoji: cardEmoji,
+      orientation: orientation,
+      position: position || '',
+      question: question
+    }),
+    signal: controller.signal
+  })
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+      clearTimeout(timeoutId);
+      if (data.reading) {
+        resultEl.classList.remove('ai-reading-error');
+        resultEl.innerHTML = '<div class="ai-reading-content">' + escapeHtml(data.reading) + '</div>';
+        // Re-enable button so user can request again
+        buttonEl.disabled = false;
+        buttonEl.innerHTML = '<span class="ai-sparkle">✨</span> AI 深度解读';
+      } else if (data.error) {
+        resultEl.classList.add('ai-reading-error');
+        resultEl.innerHTML = '<div class="ai-reading-error">' + escapeHtml(data.error) + '</div>';
+        buttonEl.disabled = false;
+        buttonEl.innerHTML = '<span class="ai-sparkle">✨</span> AI 深度解读';
+      }
+    })
+    .catch(function (err) {
+      clearTimeout(timeoutId);
+      resultEl.classList.add('ai-reading-error');
+      if (err.name === 'AbortError') {
+        resultEl.innerHTML = '<div class="ai-reading-error">AI 解读超时，请重试</div>';
+      } else if (err.message && (err.message.indexOf('Failed to fetch') !== -1 || err.message.indexOf('NetworkError') !== -1)) {
+        resultEl.innerHTML = '<div class="ai-reading-error">AI 解读服务未启动，请运行 python server.py</div>';
+      } else {
+        resultEl.innerHTML = '<div class="ai-reading-error">AI 解读暂不可用，请稍后重试</div>';
+      }
+      // Re-enable button so user can retry
+      buttonEl.disabled = false;
+      buttonEl.innerHTML = '<span class="ai-sparkle">✨</span> AI 深度解读';
+    });
 }
 
 

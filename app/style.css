@@ -1028,6 +1028,190 @@ body {
 }
 
 /* ============================================
+   AI Tarot Reading — Question Input
+   ============================================ */
+.ai-interaction-area {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.ai-question-input {
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--card-border);
+  border-radius: 20px;
+  padding: 8px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.ai-question-input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 10px rgba(123,79,191,0.2);
+}
+
+.ai-question-input::placeholder {
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+/* ============================================
+   AI Reading Button
+   ============================================ */
+.btn-ai-reading {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  margin-top: 10px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--text-dim));
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(123,79,191,0.25);
+  transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn-ai-reading:hover {
+  box-shadow: 0 4px 24px rgba(123,79,191,0.4), 0 0 40px rgba(123,79,191,0.15);
+  animation: aiGlowPulse 2s ease-in-out infinite;
+}
+
+.btn-ai-reading:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(123,79,191,0.35);
+}
+
+.btn-ai-reading:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  animation: none;
+  box-shadow: 0 2px 8px rgba(123,79,191,0.15);
+}
+
+@keyframes aiGlowPulse {
+  0%, 100% {
+    box-shadow: 0 4px 24px rgba(123,79,191,0.4), 0 0 40px rgba(123,79,191,0.15);
+  }
+  50% {
+    box-shadow: 0 4px 32px rgba(123,79,191,0.55), 0 0 56px rgba(123,79,191,0.25);
+  }
+}
+
+/* ============================================
+   Sparkle Emoji Animation
+   ============================================ */
+.ai-sparkle {
+  display: inline-block;
+  animation: sparklePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes sparklePulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+/* ============================================
+   AI Reading Result Card
+   ============================================ */
+.ai-reading-card {
+  display: block;
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--card-border);
+  border-left: 3px solid var(--accent-gold);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: var(--card-shadow);
+}
+
+.ai-reading-card::-webkit-scrollbar {
+  width: 3px;
+}
+
+.ai-reading-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-reading-card::-webkit-scrollbar-thumb {
+  background: rgba(180,150,220,0.15);
+  border-radius: 3px;
+}
+
+.ai-reading-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================
+   AI Reading Loading Skeleton
+   ============================================ */
+.ai-reading-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shimmer-bar {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(
+    90deg,
+    rgba(123,79,191,0.08) 0%,
+    rgba(180,150,220,0.18) 40%,
+    rgba(123,79,191,0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   AI Reading Error State
+   ============================================ */
+.ai-reading-card.ai-reading-error {
+  border-left-color: rgba(160,149,184,0.4);
+}
+
+.ai-reading-error {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ============================================
    NoScript Fallback
    ============================================ */
 .noscript-banner {
